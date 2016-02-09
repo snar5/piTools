@@ -3,7 +3,7 @@
 from scapy.all import *
 from threading import Thread
 from Queue import Queue, Empty
-import scapy_ex
+#import scapy_ex
 
 ap_list = {}
 stop_capture = True
@@ -18,16 +18,14 @@ def action_PacketHandler(pkt) :
   		if pkt.type == 0 and pkt.subtype == 8 :
                     if "\x00" in pkt.info:
                         ap_list[pkt.addr1] = "Hidden"
-                    else:
-                        if pkt.dBm_AntSignal is not None:
-                            ap_list[pkt.addr2] = pkt.info + str(pkt.dBm_AntSignal)
-                    if cli_mode:
-                        if pkt.type == 0:
-                            if 'SC' in pkt.fields:
-                                #rint str(pkt.dBm_AntSignal)
+		    channel = int(ord(pkt[Dot11Elt:3].info))
+                    name = pkt.info
+                    power = 256 - int(ord(pkt[RadioTap].notdecoded[26]))
+		    rate = ord(pkt[RadioTap].notdecoded[20])
+                    msg = "%s Power: <b>%s</b> Channel:<b> %s</b> %s" % (name,power,channel,rate)
+                    ap_list[pkt.addr2] = msg
+		    pkt.show()
 
-                        print str(ChannelFromMhzField()) + str(pkt.name)
-                        #print ap_list
 def show():
     return ap_list
 
