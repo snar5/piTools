@@ -13,7 +13,7 @@ urls = ( '/', 'index',
         '/wifi','wifi'
     )
 
-globalStatus = {'status': scpsniffer.stop_sniff,'title':'piToolBox'}
+globalStatus = {'status': scpsniffer.stop_capture,'title':'piToolBox'}
 
 render = web.template.render('templates',base='base',globals=globalStatus)
  
@@ -32,10 +32,10 @@ class wifi:
 class return_stats:
     def GET(self):
         print userData
-        return render.index(scpsniffer.stop_sniff,scpsniffer.show())
+        return render.index(scpsniffer.stop_capture,scpsniffer.show())
 
 def thread_sniffer(q):
-    scpsniffer.capture(q)
+    scpsniffer.capture()
 
 def create_sniffer_thread():
     q = Queue()
@@ -44,6 +44,7 @@ def create_sniffer_thread():
     threadserver.start() 
 
 if __name__== "__main__":
+    scpsniffer.cli_mode = False
     create_sniffer_thread()
     app = web.application(urls, globals())
     app.internalerror = web.debugerror
