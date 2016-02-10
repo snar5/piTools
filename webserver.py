@@ -7,6 +7,8 @@ from scapy.all import *
 from threading import Thread
 from Queue import Queue, Empty
 import json 
+from multiprocessing import Process
+import signal 
 
 urls = ( '/', 'index',
         '/stats','return_stats',
@@ -43,9 +45,29 @@ def create_sniffer_thread():
     threadserver.daemon = True
     threadserver.start() 
 
+# Channel hopper - This code is very similar to that found in airoscapy.py (http://www.thesprawl.org/projects/airoscapy/)
+def channel_hopper(interface):
+    while True:
+        try:
+            channel = random.randrange(1,13)
+            os.system("iwconfig %s channel %d" % (interface,channel))
+            time.sleep(1)
+        except KeyboardInterrupt:
+            break 
+
+def stop_channel_hop(signal, frame):
+    # set the stop_sniff variable to True to stop the sniffer
+    channel_hop.terminate()
+    channel_hop.join()
+    scpsniffer.action_StopSniff()
+    
 if __name__== "__main__":
+# 
     scpsniffer.cli_mode = False
     create_sniffer_thread()
+    channel_hop = Process(target = channel_hopper,args=(args.inteface))
+    channel_hop.start() 
+    signal.signal(signal.SIGINT, stop_channel_hop) 
     app = web.application(urls, globals())
     app.internalerror = web.debugerror
     app.run() 

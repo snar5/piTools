@@ -16,18 +16,21 @@ def action_PacketHandler(pkt) :
 
 	if pkt.haslayer(Dot11) :
   		if pkt.type == 0 and pkt.subtype == 8 :
-                    if "\x00" in pkt.info:
-                        ap_list[pkt.addr1] = "Hidden"
+
 		    channel = int(ord(pkt[Dot11Elt:3].info))
                     name = pkt.info
                     power = 256 - int(ord(pkt[RadioTap].notdecoded[26]))
-		    rate = ord(pkt[RadioTap].notdecoded[20])
-                    msg = "%s Power: <b>%s</b> Channel:<b> %s</b> %s" % (name,power,channel,rate)
-                    ap_list[pkt.addr2] = msg
-		    pkt.show()
+                    if not pkt.addr2 in list(ap_list.keys()):
+                        ap_list[pkt.addr2]={}
+                        ap_list[pkt.addr2]['name'] = name
+                        ap_list[pkt.addr2]['channel']= channel
+                        ap_list[pkt.addr2]['power'] = power 
+                        ap_list[pkt.addr2]['essid'] = pkt.addr2
+        
+
 
 def show():
-    return ap_list
+    return sorted(ap_list.values())
 
 def action_StopSniff():
     global stop_capture
