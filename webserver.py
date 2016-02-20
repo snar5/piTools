@@ -2,73 +2,120 @@
 
 import web 
 from web import form
-import scpsniffer
+import sniffer
 from scapy.all import *
-from threading import Thread
+from threading import Thread, Event, current_thread
 from Queue import Queue, Empty
 import json 
 from multiprocessing import Process
 import signal 
+from time import sleep 
+from os import system 
+import hopper
 
 urls = ( '/', 'index',
         '/stats','return_stats',
-        '/wifi','wifi'
+        '/wifi','wifi',
+        '/capture','capture',
+        '/captureEapol','captureEapol',
+        '/captureDetails','captureDetails'
     )
 
-globalStatus = {'status': scpsniffer.stop_capture,'title':'piToolBox'}
+globalStatus = {'status': sniffer.stop_capture,'title':'piToolBox'}
 
 render = web.template.render('templates',base='base',globals=globalStatus)
- 
+
 
 class index:
     def GET(self):
         return render.index()
     def POST(self):
-        return json.dumps(scpsniffer.show())
+        return json.dumps(sniffer.show())
+
 class wifi:
     def GET(self):
-        return render.wifi()
+        if not sniffer.stop_capture:
+            return render.wifi('Scanner is running')
+        else:
+            return render.wifi('Scanner is not running')
+
     def POST(self):
-        return json.dumps(scpsniffer.show())
+        if not sniffer.stop_capture:
+            return json.dumps(sniffer.show())
+        else:
+            return "Sniffer Not Running"
+
+class capture:
+    def GET(self):
+        wifi_info = web.input(name=None,channel=None,essid=None)
+        return render.capture(wifi_info)
+
+    def POST(self):
+        return json.dumps(sniffer.show())
+
+class captureEapol:
+    def POST(self):
+        interface ='wlan0'
+        values = web.input(essid=None,channel=None,name=None)
+        essid = values['essid']
+        channel = values['channel']
+        name =  values['name']
+        hopper.stophopper() 
+        sniffer.stopSniff()
+        sleep(1)
+        sniffer.startSniffSingleChannel(interface,channel,essid,name)
+        print "Eapol Returned"
+        return "EAPOL Captured"
+
+class captureDetails:
+    def POST(self):
+        interface ='wlan0'
+        values = web.input(essid=None,channel=None,name=None)
+        essid = values['essid']
+        channel = values['channel']
+        name =  values['name']
+        hopper.stophopper() 
+        sniffer.stopSniff()
+        sleep(1)
+        sniffer.startDetailSniffSingleChannel(interface,channel,essid,name)
+        print "Details.."
 
 class return_stats:
     def GET(self):
         print userData
-        return render.index(scpsniffer.stop_capture,scpsniffer.show())
+        return render.index(sniffer.stop_capture,sniffer.show())
 
-def thread_sniffer(q):
-    scpsniffer.capture()
+ 
+def thread_sniffer(interface):
+    sniffer.startSniff(interface)
 
-def create_sniffer_thread():
-    q = Queue()
-    threadserver = Thread(target = thread_sniffer, args=(q,))
+def create_sniffer_thread(interface):
+    threadserver = Thread(target = thread_sniffer,args=(interface,))
     threadserver.daemon = True
     threadserver.start() 
+    print "End of sniffer thread"
 
-# Channel hopper - This code is very similar to that found in airoscapy.py (http://www.thesprawl.org/projects/airoscapy/)
-def channel_hopper(interface):
-    while True:
-        try:
-            channel = random.randrange(1,13)
-            os.system("iwconfig %s channel %d" % (interface,channel))
-            time.sleep(1)
-        except KeyboardInterrupt:
-            break 
+def thread_channelhopper(interface):
+    hopper.run(interface)
 
-def stop_channel_hop(signal, frame):
-    # set the stop_sniff variable to True to stop the sniffer
-    channel_hop.terminate()
-    channel_hop.join()
-    scpsniffer.action_StopSniff()
+def create_hopper_thread(interface):
+    threadserver = Thread(target = thread_channelhopper,args=(interface,))
+    threadserver.daemon = True
+    threadserver.start()
+
+
+
+if __name__=="__main__":
+    os.system("clear")
+    interface = "wlan0"
+    create_sniffer_thread(interface)
+    create_hopper_thread(interface)
     
-if __name__== "__main__":
-# 
-    scpsniffer.cli_mode = False
-    create_sniffer_thread()
-    channel_hop = Process(target = channel_hopper,args=(args.inteface))
-    channel_hop.start() 
-    signal.signal(signal.SIGINT, stop_channel_hop) 
+    
+    sniffer.cli_mode = False
     app = web.application(urls, globals())
     app.internalerror = web.debugerror
+    print "Starting WebApplication...."
     app.run() 
+
 
