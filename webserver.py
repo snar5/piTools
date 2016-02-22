@@ -16,7 +16,7 @@ import hopper
 urls = ( '/', 'index',
         '/stats','return_stats',
         '/wifi','wifi',
-        '/capture','capture',
+        '/apDetail','apDetail',
         '/captureEapol','captureEapol',
         '/captureDetails','captureDetails'
     )
@@ -24,7 +24,6 @@ urls = ( '/', 'index',
 globalStatus = {'status': sniffer.stop_capture,'title':'piToolBox'}
 
 render = web.template.render('templates',base='base',globals=globalStatus)
-
 
 class index:
     def GET(self):
@@ -45,7 +44,7 @@ class wifi:
         else:
             return "Sniffer Not Running"
 
-class capture:
+class apDetail:
     def GET(self):
         wifi_info = web.input(name=None,channel=None,essid=None)
         return render.capture(wifi_info)
@@ -77,23 +76,25 @@ class captureDetails:
         hopper.stophopper() 
         sniffer.stopSniff()
         sleep(1)
-        sniffer.startDetailSniffSingleChannel(interface,channel,essid,name)
-        print "Details.."
+	create_detailsniff_thread(interface,channel,essid,name)
+	print "Details.."
 
 class return_stats:
     def GET(self):
         print userData
         return render.index(sniffer.stop_capture,sniffer.show())
 
- 
-def thread_sniffer(interface):
-    sniffer.startSniff(interface)
+def create_detailsniff_thread(interface,channel,essid,name):
+	print "Creating detail scan thread"
+	threadserver = Thread(target=sniffer.startDetailSniffSingleChannel, args= (interface,channel,essid,name,))
+	threadserver.daemon = True
+	threadserver.start() 
 
 def create_sniffer_thread(interface):
-    threadserver = Thread(target = thread_sniffer,args=(interface,))
-    threadserver.daemon = True
-    threadserver.start() 
-    print "End of sniffer thread"
+	threadserver = Thread(target=sniffer.startSniff,args=(interface,))
+	threadserver.daemon = True
+	threadserver.start() 
+
 
 def thread_channelhopper(interface):
     hopper.run(interface)
@@ -110,7 +111,6 @@ if __name__=="__main__":
     interface = "wlan0"
     create_sniffer_thread(interface)
     create_hopper_thread(interface)
-    
     
     sniffer.cli_mode = False
     app = web.application(urls, globals())

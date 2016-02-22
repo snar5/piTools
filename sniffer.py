@@ -45,7 +45,7 @@ def startSniff(interface):
     print "Sniffer Started.."
     sniff(iface=interface, store =0,count=0,stop_filter=sniff_run, prn = packetHandler)
     ap_list=[]
-    print "Sniffer Stopped.."
+    print "Sniffer from startsniff Stopped.."
 
 #----------------------------------------------------------
 #
@@ -55,7 +55,12 @@ def startSniff(interface):
 #------------------------------------------------------------
 
 def show():
-    return sorted(ap_list.values())
+    print "Length: ", len(ap_list)
+    if len(ap_list) > 0:
+	print ap_list
+	return sorted(ap_list.values())
+    else:
+	return None
 
 def stopSniff():
     global stop_capture
@@ -100,20 +105,22 @@ def startAuthSniffSingleChannel(interface,channel,essid,name):
 # Detailed information scan 
 def startDetailSniffSingleChannel(interface,channel,essid,name):
     global stop_capture
-    stop_capture = False
+    stop_capture = False 
+    global ap_list
     print "Starting single channel on %s %s %s" %( interface,channel,essid)
     system("iwconfig %s channel %d" % (interface,int(channel)))
     essid = str(essid)
     ap_list = {} # Clear to fill up with our new details
     sniff(iface=interface,lfilter= lambda x: x[Dot11].addr2 == essid or x[Dot11].addr3 == essid, store =0,count=0,stop_filter=sniff_run, prn = capture_detail(essid))
 
-def capture_detail(essid):
+def capture_detail(pessid):
+    essid = pessid
     def packet_detail(pkt):
-
+	global ap_list
         if not pkt.addr3 in list(ap_list.keys()) and pkt.addr3 != essid:
             ap_list[pkt.addr3]={}
-            ap_list[pkt.addr3]['essid'] = pkt.addr3
-
+	    ap_list[pkt.addr3]['essid'] = pkt.addr3
+            ap_list[pkt.addr3]['to_from'] = pkt.FCfield
     return packet_detail
 
 

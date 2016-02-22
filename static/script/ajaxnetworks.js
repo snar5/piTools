@@ -7,8 +7,8 @@ $(document).ready(function () {
 	
 
 
-	function capture(wifiname,channel,essid){
-		window.location = "/capture?name=" + wifiname + "&channel=" + channel + "&essid=" + essid;
+	function apDetail(wifiname,channel,essid){
+		window.location = "/apDetail?name=" + wifiname + "&channel=" + channel + "&essid=" + essid;
 		}
 
 
@@ -24,8 +24,8 @@ $(document).ready(function () {
 					// console.log(result.power);
 					var networkname = result.name + "\"," + result.channel + ",\"" + result.essid
 					var networkname = "\"" + networkname + "\"";
-					$("#tbl_wifi").append("<tr><td height='50' width='150'>SSID:<b><a href='#' onclick='capture(" + networkname + ")'> " + result.name + "</a></b><br>ESSID: " + result.essid + "</td><td width='150'>" + result.power + "</td><td width='150'>" + result.channel + "</td><td width='150'><b> " + result.data + "</b></td></tr>");})
-				$("#tbl_wifi").tablesorter( {sortList: [[1,0]]}); //sortable table
+					$("#tbl_wifi").append("<tr><td height='50' width='150'>SSID:<b><a href='#' onclick='apDetail(" + networkname + ")'> " + result.name + "</a></b><br>ESSID: " + result.essid + "</td><td width='150'>" + result.power + "</td><td width='150'>" + result.channel + "</td><td width='150'><b> " + result.data + "</b></td></tr>");})
+				$("#tbl_wifi").tablesorter() // {sortList: [[1,0]]}); //sortable table
 			}
 			});
 	} //End of getwifilist
