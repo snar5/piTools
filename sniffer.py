@@ -7,8 +7,16 @@ from os import system
 
 ap_list = {}
 stop_capture = False
+detail_scan  = False
+general_scan = True 
+eapol_scan = False 
+
+general_list = {}
+detail_list = {}
+eapol_list = {}
 
 global cli_mode # Used if running from command line  
+
 #--------------------------------------------------
 #
 # General Scanning Packet Handling 
@@ -16,36 +24,74 @@ global cli_mode # Used if running from command line
 # 
 # note: sniff_run needs to be a function to pass to the sniff
 #       in order to stop it from running 
+# -------------------------------------------------
 
-def packetHandler(pkt) :
 
-	if pkt.haslayer(Dot11) :
+def handle_packet(type_of_scan):
 
-  		if pkt.type == 0 and pkt.subtype == 8 :
-                    channel = int(ord(pkt[Dot11Elt:3].info))
-                    name = pkt.info
-                    if name == "":
-                        name = "Hidden"
-                    power = 256 - int(ord(pkt[RadioTap].notdecoded[26]))
-                    if not pkt.addr2 in list(ap_list.keys()):
-                        ap_list[pkt.addr2]={}
-                        ap_list[pkt.addr2]['name'] = name
-                        ap_list[pkt.addr2]['channel']= channel
-                        ap_list[pkt.addr2]['power'] = power 
-                        ap_list[pkt.addr2]['essid'] = pkt.addr2
-                        ap_list[pkt.addr2]['data'] = 0
-                if pkt.type == 2: # Type 2 = Data Packets 
-                    if pkt.addr2 in list(ap_list.keys()):
-                        ap_list[pkt.addr2]['data'] += 1
+   if type_of_scan == 1:
+	detail_scan = True
+        general_scan = False
+	eapol_scan = False 
+   elif type_of_scan ==2:
+	detail_scan = True
+	eapol_scan = False
+	general_scan = False
+   elif type_of_scan ==3:
+	general_scan = True
+	detail_scan = False
+	eapol_scan = False  
 
-def startSniff(interface):
-    global ap_list
+   def packetHandler(pkt) :
+	if detail_scan:
+		pass
+	if eapol_scan:
+		pass
+	if general_scan:
+		if pkt.haslayer(Dot11) :
+  			if pkt.type == 0 and pkt.subtype == 8 :
+                    		channel = int(ord(pkt[Dot11Elt:3].info))
+                    		name = pkt.info
+                    		if name == "":
+                        		name = "Hidden"
+                    		power = 256 - int(ord(pkt[RadioTap].notdecoded[26]))
+                    		if not pkt.addr2 in list(ap_list.keys()):
+                        		ap_list[pkt.addr2]={}
+                        		ap_list[pkt.addr2]['name'] = name
+                        		ap_list[pkt.addr2]['channel']= channel
+                        		ap_list[pkt.addr2]['power'] = power 
+                        		ap_list[pkt.addr2]['essid'] = pkt.addr2
+                        		ap_list[pkt.addr2]['data'] = 0
+                		if pkt.type == 2: # Type 2 = Data Packets 
+                    			if pkt.addr2 in list(ap_list.keys()):
+                        			ap_list[pkt.addr2]['data'] += 1
+   return packetHandler
+
+def startSniff(interface, type_of_scan):
+    # globals to clear out globals 
+
+    global general_list
+    global detail_list
+    global eapol_list
     global stop_capture
+
     stop_capture = False
-    print "Sniffer Started.."
+
+    if type_of_scan = 1:
+    	print "General Scan Started.."
+	general_list = {}
+    elif type_of_scan = 2 
+	print "Detail Scan Started.."
+	detail_list = {}
+    elif type_of_scan = 3
+	print "Eapol Scan Started.."
+	eapol_list = {}
+
     sniff(iface=interface, store =0,count=0,stop_filter=sniff_run, prn = packetHandler)
-    ap_list=[]
+    
     print "Sniffer from startsniff Stopped.."
+
+
 
 #----------------------------------------------------------
 #
