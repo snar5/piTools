@@ -25,19 +25,15 @@ globalStatus = {'status': sniffer.stop_capture,'title':'piToolBox'}
 
 render = web.template.render('templates',base='base',globals=globalStatus)
 
+interface = 'wlan0' 
+
 class index:
     def GET(self):
         return render.index()
-    def POST(self):
-        return json.dumps(sniffer.show())
 
 class wifi:
     def GET(self):
-        if not sniffer.stop_capture:
-            return render.wifi('Scanner is running')
-        else:
-            return render.wifi('Scanner is not running')
-
+	return render.wifi(json.dumps(sniffer.show()))
     def POST(self):
         if not sniffer.stop_capture:
             return json.dumps(sniffer.show())
@@ -50,11 +46,11 @@ class apDetail:
         return render.capture(wifi_info)
 
     def POST(self):
-        return json.dumps(sniffer.show())
+        return json.dumps(sniffer.showDetail())
 
 class captureEapol:
     def POST(self):
-        interface ='wlan0'
+       
         values = web.input(essid=None,channel=None,name=None)
         essid = values['essid']
         channel = values['channel']
@@ -62,13 +58,13 @@ class captureEapol:
         hopper.stophopper() 
         sniffer.stopSniff()
         sleep(1)
-        sniffer.startSniffSingleChannel(interface,channel,essid,name)
+        sniffer.startSniffSingleChannel(channel,essid,name)
         print "Eapol Returned"
         return "EAPOL Captured"
 
 class captureDetails:
-    def POST(self):
-        interface ='wlan0'
+
+    def POST(self):       
         values = web.input(essid=None,channel=None,name=None)
         essid = values['essid']
         channel = values['channel']
@@ -76,7 +72,7 @@ class captureDetails:
         hopper.stophopper() 
         sniffer.stopSniff()
         sleep(1)
-	create_detailsniff_thread(interface,channel,essid,name)
+	create_detailsniff_thread(channel,essid,name)
 	print "Details.."
 
 class return_stats:
@@ -84,16 +80,18 @@ class return_stats:
         print userData
         return render.index(sniffer.stop_capture,sniffer.show())
 
-def create_detailsniff_thread(interface,channel,essid,name):
+def create_detailsniff_thread(channel,essid,name):
+	print "Interface: ", interface
 	print "Creating detail scan thread"
 	threadserver = Thread(target=sniffer.startDetailSniffSingleChannel, args= (interface,channel,essid,name,))
 	threadserver.daemon = True
 	threadserver.start() 
-
-def create_sniffer_thread(interface):
-	threadserver = Thread(target=sniffer.startSniff,args=(interface,))
+	print threadserver.getName()
+def create_sniffer_thread(interface,type_of_scan):
+	threadserver = Thread(target=sniffer.startSniff,args=(interface,type_of_scan))
 	threadserver.daemon = True
-	threadserver.start() 
+	threadserver.start()
+	print threadserver.getName() 
 
 
 def thread_channelhopper(interface):
@@ -108,8 +106,8 @@ def create_hopper_thread(interface):
 
 if __name__=="__main__":
     os.system("clear")
-    interface = "wlan0"
-    create_sniffer_thread(interface)
+
+    create_sniffer_thread(interface,1)
     create_hopper_thread(interface)
     
     sniffer.cli_mode = False
