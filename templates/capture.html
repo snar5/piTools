@@ -7,9 +7,11 @@ $var jsfiles: monitor.js
 		   <tr class='success'><td>Wifi Network: $name.name</td></tr>
 		   <tr class='info'><td>MAC $name.essid</td></tr>
 		   <tr class='info'><td>Channel $name.channel</td></tr>
-		   <tr><td><button id='btnDetails' class='btn bton-primary'>Details</button></td></tr>
+		   <tr><td><button id='btnDetails' class='btn bton-primary'>Show Clients </button></td></tr>
 	</table>
-	<table id='tbl_details'>
+	<div id='loading'>
+	</div>
+	<table class='table' id='tbl_details'>
 	</table>
 	<input id='netName' type='hidden' value=$name.name />
 	<input id='netChannel' type='hidden' value=$name.channel />

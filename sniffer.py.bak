@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+from scapy.all import *
+from threading import Thread
+from Queue import Queue, Empty
+from os import system
+
+wifi_list = {}
+stop_capture = False
+sniff_filter = 0 
+
+#--------------------------------------------------
+#
+# General Scanning Packet Handling 
+# packetHandler gets every packet from startSniff
+# 
+# note: sniff_run needs to be a function to pass to the sniff
+#       in order to stop it from running 
+# -------------------------------------------------
+
+
+
+def packetHandler(pkt):
+	name = ""	
+	if pkt.haslayer(Dot11) :
+		try:
+			channel = int(ord(pkt[Dot11Elt:3].info))
+		except:
+			channel = 0
+		if pkt.type == 0 and pkt.subtype == 8:
+			name = pkt.info
+			if name == "":
+				name = "Hidden"
+			power = 256 - int(ord(pkt[RadioTap].notdecoded[26]))
+
+			if not pkt.addr2 in list(wifi_list.keys()):
+				wifi_list[pkt.addr2]={}
+				wifi_list[pkt.addr2]['name'] = name
+				wifi_list[pkt.addr2]['channel']= channel
+				wifi_list[pkt.addr2]['power'] = power 
+				wifi_list[pkt.addr2]['essid'] = pkt.addr2
+				wifi_list[pkt.addr2]['data'] = 0
+		if pkt.type == 2: # Type 2 = Data Packets
+			if pkt.addr2 in list(wifi_list.keys()):
+				wifi_list[pkt.addr2]['data'] += 1
+ 
+def startSniff(interface):
+	global wifi_list
+    	global stop_capture
+	sniff_filter = ''
+    	stop_capture = False
+   	wifi_list = {}
+	#Sniff Routine 
+    	sniff(iface=interface, lfilter = active_filter,store =0,count=0,stop_filter=run(), prn = packetHandler)
+  
+def active_filter(p):
+
+ 	if sniff_filter ==0:
+		if p.type == 0 and p.subtype == 8:
+			print "All"
+			return p
+def show():
+    if len(wifi_list) > 0:
+	return sorted(wifi_list.values())
+    else:
+	return None
+
+def stop():
+    global stop_capture
+    stop_capture = True
+
+def run():
+    return stop_capture
+
+def setfilter(filtertxt=''):
+	global sniff_filter
+	sniff_filter = filtertxt
+
+def setfilter_toAP(APMac):
+	global sniff_filter
+	global wifi_list
+	wifi_list = {}
+	sniff_filter = 1 #'x[Dot11].addr1 ==' + APMac.lower() + ' & (x.FCfield & 0x01 == 1)'
+
+def setfilter_allAP():
+	global wifi_list
+	global sniff_filter
+	wifi_list={}
+	sniff_filter = 0
+
+
+

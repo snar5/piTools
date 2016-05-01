@@ -14,10 +14,10 @@ from os import system
 import hopper
 
 urls = ( '/', 'index',
-	'/scannerstatus','scannerstatus',
         '/stats','return_stats',
         '/wifi','wifi',
         '/apDetail','apDetail',
+        '/captureEapol','captureEapol',
         '/captureDetails','captureDetails'
     )
 
@@ -33,9 +33,6 @@ class index:
 
 class wifi:
     def GET(self):
-	if sniffer.sniff_filter != 0:
-		sniffer.setfilter_allAP()
-		return render.wifi("Loading")
 	return render.wifi(json.dumps(sniffer.show()))
     def POST(self):
         if not sniffer.stop_capture:
@@ -49,7 +46,21 @@ class apDetail:
         return render.capture(wifi_info)
 
     def POST(self):
-        return json.dumps(sniffer.showdetails())
+        return json.dumps(sniffer.showDetail())
+
+class captureEapol:
+    def POST(self):
+       
+        values = web.input(essid=None,channel=None,name=None)
+        essid = values['essid']
+        channel = values['channel']
+        name =  values['name']
+        hopper.stophopper() 
+        sniffer.stopSniff()
+        sleep(1)
+        sniffer.startSniffSingleChannel(channel,essid,name)
+        print "Eapol Returned"
+        return "EAPOL Captured"
 
 class captureDetails:
 
@@ -58,15 +69,30 @@ class captureDetails:
         essid = values['essid']
         channel = values['channel']
         name =  values['name']
-	print "Setting Mac to %s " % essid
-	sniffer.setfilter_toAP(essid)
+        hopper.stophopper() 
+        sniffer.stopSniff()
+        sleep(1)
+	create_detailsniff_thread(channel,essid,name)
+	print "Details.."
 
+class return_stats:
+    def GET(self):
+        print userData
+        return render.index(sniffer.stop_capture,sniffer.show())
 
-def create_sniffer_thread(interface):
-	threadserver = Thread(target=sniffer.startSniff,args=(interface,))
+def create_detailsniff_thread(channel,essid,name):
+	print "Interface: ", interface
+	print "Creating detail scan thread"
+	threadserver = Thread(target=sniffer.startDetailSniffSingleChannel, args= (interface,channel,essid,name,))
+	threadserver.daemon = True
+	threadserver.start() 
+	print threadserver.getName()
+def create_sniffer_thread(interface,type_of_scan):
+	threadserver = Thread(target=sniffer.startSniff,args=(interface,type_of_scan))
 	threadserver.daemon = True
 	threadserver.start()
-	
+	print threadserver.getName() 
+
 
 def thread_channelhopper(interface):
     hopper.run(interface)
@@ -76,20 +102,15 @@ def create_hopper_thread(interface):
     threadserver.daemon = True
     threadserver.start()
 
-class scannerstatus:
-	def GET(self):
-		print "Sniffer = " , sniffer.sniff_filter
-		return sniffer.sniff_filter
-	def POST(self):
-		print "Sniffer = " , sniffer.sniff_filter
-		return sniffer.sniff_filter
+
 
 if __name__=="__main__":
     os.system("clear")
-    sniffer.setfilter_allAP()
-    create_sniffer_thread(interface)
+
+    create_sniffer_thread(interface,1)
     create_hopper_thread(interface)
-    web.config.debug = False    
+    
+    sniffer.cli_mode = False
     app = web.application(urls, globals())
     app.internalerror = web.debugerror
     print "Starting WebApplication...."

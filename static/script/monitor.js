@@ -4,6 +4,7 @@ $(document).ready(function () {
 			netChannel = document.getElementById('netChannel').value;
 			netEssid = document.getElementById('netEssid').value;
 			$("#tbl_status").empty();
+			$("#tbl_status").html("<img src='ajax-loader.gif'>loading....");
 			$.ajax({
 				type:'POST',
 				url: '/captureDetails',
@@ -28,14 +29,17 @@ function get_details(){
 	url: '/apDetail',
         dataType : "json",
         success: function(results){
-       		 setTimeout(function(){get_details();},30000);
+       		 setTimeout(function(){get_details();},5000);
                  $("#tbl_details").empty();
-                 $.each(results,function(index,result){
-                   console.log(index,result);
-                   var networkname = result.name + "\"," + result.channel + ",\"" + result.essid
-                   var networkname = "\"" + networkname + "\"";
-                   $("#tbl_details").append("<tr><td height='50' width='150'>SSID:<b>" + result.essid + "</a></b><br>ESSID: " + result.to_from + "</td>i")
-                        })
+		 if (!results) { 
+			$("#loading").show();
+			} else { 
+				$("#loading").hide();
+		 		$("#tbl_details").append("<th><tr><td>Client(s):</td></tr></th>");
+                 		$.each(results,function(index,result){
+                   		console.log(result.client,result.power);
+                   		$("#tbl_details").append("<tr><td height='50' width='150'>Client: <b>" + result.client + "</b> Signal Strength: " + result.power + "</td></tr>");
+                        })}
                        } });
         } //End of getwifilist
 	

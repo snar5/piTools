@@ -11,6 +11,8 @@ $def with (content)
         <script src="/static/js/jquery-1.12.0.min.js"></script>
 	<script src="/static/js/jquery-ui.min.js"></script>
 	<script src="/static/js/jquery.tablesorter.js"></script>
+	<script src="/static/js/base.js"></script> 
+
 $if content.jsfiles:
 	$for f in content.jsfiles.split():
 		<script type="text/javascript" src="static/script/$f"></script>
@@ -77,13 +79,9 @@ $if content.jsfiles:
 	    <div class="row content">
 		    <div class="col-sm-2 sidenav">
 			    <img style='float:left;width:100px;heigh:100px;margin:1px;text-align:left;' src=/static/images/Pi-Header.png />
-			    <p style='text-align:left;'>piToolBox was created to help see wireless network information from the RaspberryPi via  web interface.</p>
-			    <p>
-			    <ul class="ui-widget ui-helper-clearfix">
-			    <li class="ui-state-default ui-corner-all" title=".ui-icon-circle-triangle-e">Scanner Status</li>
-			</ul>
-			    </p>
-			
+			    <p style='text-align:left;'></p>
+			    <div id='scanner'></div>
+			  
 		    </div>
 	    	<!-- Page Content Here --> 
 		    <div class="col-sm-8 text-left">
